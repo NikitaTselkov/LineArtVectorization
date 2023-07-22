@@ -9,6 +9,10 @@ using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows;
+using System.Runtime.ConstrainedExecution;
+using System.Reflection;
+using System.Windows.Markup;
+using System.Runtime.InteropServices;
 
 namespace LineArtVectorization.Models
 {
@@ -29,19 +33,20 @@ namespace LineArtVectorization.Models
             return data;
         }
 
-        public static byte[] BitmapSourcePixelsToArray(BitmapSource bitmapSource)
+        public static byte[] BitmapSourceToPixelsArray(BitmapSource bitmapSource)
         {
             // Stride = (width) x (bytes per pixel)
-            int stride = (int)bitmapSource.PixelWidth * 4;
+            byte bytesPerPixel = 4;
+            int stride = (int)bitmapSource.PixelWidth * bytesPerPixel;
             byte[] pixels = new byte[(int)bitmapSource.PixelHeight * stride];
-            byte[] result = new byte[pixels.Length / 4];
+            byte[] result = new byte[pixels.Length / bytesPerPixel];
 
             bitmapSource.CopyPixels(pixels, stride, 0);
 
-            for (int i = 0; i < pixels.Length; i+= 4)
+            for (int i = 0; i < pixels.Length; i+= bytesPerPixel)
             {
                 if(i == 0) result[i] = pixels[i];
-                else result[i / 4] = pixels[i];
+                else result[i / bytesPerPixel] = pixels[i];
             }
 
             return result;
@@ -64,7 +69,7 @@ namespace LineArtVectorization.Models
 
         public static Bitmap ConvertFormatToBlackAndWhite(BitmapSource bitmap, int P)
         {
-            Bitmap result = new Bitmap((int)bitmap.Width, (int)bitmap.Height);
+            Bitmap result = new((int)bitmap.Width, (int)bitmap.Height);
             var color = new System.Windows.Media.Color();
 
             for (int j = 0; j < bitmap.Height - 1; j++)

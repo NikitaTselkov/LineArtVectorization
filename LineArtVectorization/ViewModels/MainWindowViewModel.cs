@@ -62,9 +62,10 @@ namespace LineArtVectorization.ViewModels
                 var blackAndWhiteBitmap = BitmapHelper.ConvertFormatToBlackAndWhite(Image, 150);
                 Image = BitmapHelper.BitmapToImageSource(blackAndWhiteBitmap);
 
+                var pixelsArray = BitmapHelper.BitmapSourceToPixelsArray(Image);
+
                 var rleEncoder = new DataCompression<int>();
-                var biteArray = BitmapHelper.BitmapSourcePixelsToArray(Image);
-                var rle = rleEncoder.EncodeRLE(biteArray.Select(s => Convert.ToInt32(s)).ToArray());
+                var rle = rleEncoder.EncodeRLE(Array.ConvertAll(pixelsArray, i => (int)i));
             }
         }
 
