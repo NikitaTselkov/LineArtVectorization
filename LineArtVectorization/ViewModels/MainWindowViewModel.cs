@@ -57,15 +57,12 @@ namespace LineArtVectorization.ViewModels
 
             if (openFileDialog.ShowDialog() is true)
             {
-                Image = new BitmapImage(new Uri(openFileDialog.FileName, UriKind.Absolute));
+                var image = new BitmapImage(new Uri(openFileDialog.FileName, UriKind.Absolute));
+                byte[,] pixels = BitmapHelper.BitmapSourceToBlackAndWhitePixelsArray(image, 150);
+                Image = BitmapHelper.BinaryPixelsArrayToBitmapSource(pixels);
 
-                var blackAndWhiteBitmap = BitmapHelper.ConvertFormatToBlackAndWhite(Image, 150);
-                Image = BitmapHelper.BitmapToImageSource(blackAndWhiteBitmap);
-
-                var pixelsArray = BitmapHelper.BitmapSourceToPixelsArray(Image);
-
-                var rleEncoder = new DataCompression<int>();
-                var rle = rleEncoder.EncodeRLE(Array.ConvertAll(pixelsArray, i => (int)i));
+               //var rleEncoder = new DataCompression<int>();
+               // var rle = rleEncoder.EncodeRLE(Array.ConvertAll(pixelsArray, i => (int)i));
             }
         }
 
