@@ -5,8 +5,8 @@ namespace LineArtVectorization.Models
 {
     public interface IDataCompression<T>
     {
-        public T[] EncodeRLE(T[] data);
+        public O[] Compress<O>(T[] data);
 
-        public T[] DecodeRLE(T[] data);
+        public T[] Decompress<O>(O[] data);
     }
 }
