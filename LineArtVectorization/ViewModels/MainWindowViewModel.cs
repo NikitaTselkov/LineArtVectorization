@@ -1,15 +1,12 @@
-﻿using LineArtVectorization.Models;
+﻿using LineArtVectorization.Core;
+using LineArtVectorization.Models;
 using Microsoft.Win32;
 using Prism.Commands;
 using Prism.Mvvm;
 using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
-using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -31,6 +28,8 @@ namespace LineArtVectorization.ViewModels
             set { SetProperty(ref _image, value); }
         }
 
+        public ObservableCollection<Line> Lines { get; set; }
+
         #region Commands
 
         private DelegateCommand _loadCommand;
@@ -39,9 +38,9 @@ namespace LineArtVectorization.ViewModels
 
         #endregion
 
-        public MainWindowViewModel()
+        public MainWindowViewModel() 
         {
-
+            Lines = new ObservableCollection<Line>();
         }
 
         private void ExecuteLoadCommand()
@@ -50,9 +49,9 @@ namespace LineArtVectorization.ViewModels
             {
                 AddExtension = true,
                 Filter =
-                    "All Documents (*.png;*.jpeg;)|*.png;*.jpeg;|" +
+                    "All Documents (*.png;*.jpg;)|*.png;*.jpg;|" +
                     "PNG (*.png)|*.png|" +
-                    "JPEG (*.jpeg)|*.jpeg"
+                    "JPEG (*.jpg)|*.jpg"
             };
 
             if (openFileDialog.ShowDialog() is true)
@@ -62,11 +61,23 @@ namespace LineArtVectorization.ViewModels
                 Image = BitmapHelper.BinaryPixelsArrayToBitmapSource(pixels);
 
                 var rleByteEncoder = new RLE<byte>();
-                var rle = rleByteEncoder.Compress<int>(new byte[] {0,0,0,0,20,3,3,3,3,3,3,34,4,4,4,44,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6 });
-                var t = rleByteEncoder.Decompress(rle);
+
+                var MCC = rleByteEncoder.GetMCC(pixels);
+
+                var skelet = new Skeletonization();
+
+                var skeletonCurves = skelet.PartialSkeletonization(MCC);
+
+                foreach (var item in skeletonCurves)
+                {
+                    Lines.Add(new Line
+                    {
+                        Start = new Point(item.Points.First().X, item.Points.First().Y),
+                        End = new Point(item.Points.Last().X, item.Points.Last().Y)
+                    });
+                }
+
             }
         }
-
-      
     }
 }

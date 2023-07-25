@@ -4,6 +4,7 @@
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:core="clr-namespace:LineArtVectorization.Core"
         xmlns:prism="http://prismlibrary.com/"
+        xmlns:local="clr-namespace:LineArtVectorization.ViewModels"
         prism:ViewModelLocator.AutoWireViewModel="True"
         Title="{Binding Title}" Height="600" Width="800">
 
@@ -14,6 +15,34 @@
     </i:Interaction.Triggers>
 
     <Grid>
-        <Image Source="{Binding Image}" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <Canvas>
+            <Canvas.Resources>
+                <DataTemplate DataType="{x:Type core:Line}">
+                    <Line X1="{Binding Start.X}" 
+                            Y1="{Binding Start.Y}"
+                            X2="{Binding End.X}"
+                            Y2="{Binding End.Y}"
+                            Stroke="Orange"/>
+                </DataTemplate>
+            </Canvas.Resources>
+
+            <Image Canvas.Left="0" Canvas.Top="0" Opacity="0.5" Source="{Binding Image}" />
+
+            <ItemsControl ItemsSource="{Binding Lines}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Canvas/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+
+                <ItemsControl.ItemContainerStyle>
+                    <Style TargetType="ContentPresenter">
+                        <Setter Property="Canvas.Left" Value="0"/>
+                        <Setter Property="Canvas.Top" Value="0"/>
+                    </Style>
+                </ItemsControl.ItemContainerStyle>
+            </ItemsControl>
+        </Canvas>
+       
     </Grid>
 </Window>

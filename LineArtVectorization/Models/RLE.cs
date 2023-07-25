@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Metrics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LineArtVectorization.Models
 {
@@ -50,7 +47,7 @@ namespace LineArtVectorization.Models
 
         public T[] Decompress<O>(O[] data)
         {
-            List<T> result = new List<T>();
+            var result = new List<T>();
 
             for (int i = 0; i < data.Length; i += 2)
             {
@@ -63,6 +60,49 @@ namespace LineArtVectorization.Models
             }
 
             return result.ToArray();
+        }
+
+        public IList<Series>[] GetMCC(T[,] image)
+        {
+            int width = image.GetLength(0);
+            int height = image.GetLength(1);
+
+            var columns = new List<Series>[width];
+
+            for (int i = 0; i < columns.Length; i++)
+            {
+                columns[i] = new List<Series>();
+            }
+
+            byte black = 1;
+
+            for (int y = 0; y < height; y++)
+            {
+                int startX = -1;
+
+                for (int x = 0; x < width; x++)
+                {
+                    byte pixel = Convert.ToByte(image[x, y]);
+
+                    if (pixel == black && startX == -1)
+                        startX = x;
+
+                    if (pixel != black && startX != -1)
+                    {
+                        var series = new Series(Direction.Vertical, y, startX, x - 1);
+                        columns[startX].Add(series);
+                        startX = -1;
+                    }
+                }
+
+                if (startX != -1)
+                {
+                    var series = new Series(Direction.Vertical, y, startX, width - 1);
+                    columns[startX].Add(series);
+                }
+            }
+
+            return columns;
         }
     }
 }

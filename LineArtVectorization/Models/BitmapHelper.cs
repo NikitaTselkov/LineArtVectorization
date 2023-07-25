@@ -3,6 +3,8 @@ using System.Windows.Media.Imaging;
 using System.Windows;
 using System.Collections.Generic;
 using System.Windows.Media;
+using System;
+using System.Linq;
 
 namespace LineArtVectorization.Models
 {
@@ -12,7 +14,7 @@ namespace LineArtVectorization.Models
         {
             int height = pixels.GetLength(0);
             int width = pixels.GetLength(1);
-            int stride = (width + 7) / 8; // Round up to next multiple of 8
+            int stride = width;
 
             byte[] pixelData = new byte[height * stride];
 
@@ -21,23 +23,15 @@ namespace LineArtVectorization.Models
                 int byteIndex = y * stride;
                 for (int x = 0; x < width; x++)
                 {
-                    int bitIndex = x % 8;
-                    byte pixelByte = 0;
-
-                    if (pixels[y, x] == 1)
-                    {
-                        pixelByte |= (byte)(1 << (7 - bitIndex));
-                    }
-
-                    pixelData[byteIndex + x / 8] |= pixelByte;
+                    pixelData[byteIndex + x] = pixels[y, x];
                 }
             }
 
             return BitmapSource.Create(width, height, 96, 96,
-              PixelFormats.Indexed1,
+              PixelFormats.Indexed8,
               new BitmapPalette(new List<Color>() { Colors.White, Colors.Black }),
               pixelData, stride);
-        } 
+        }
 
         public static byte[,] BitmapSourceToBlackAndWhitePixelsArray(BitmapSource bitmapSource, int threshold)
         {
@@ -57,9 +51,9 @@ namespace LineArtVectorization.Models
                 {
                     int pixelOffset = rowOffset + x * 4;
 
-                    byte blue = pixelData[pixelOffset];
-                    byte green = pixelData[pixelOffset + 1];
-                    byte red = pixelData[pixelOffset + 2];
+                    byte blue = pixelData[pixelOffset]; // blue
+                    byte green = pixelData[pixelOffset + 1]; // green  
+                    byte red = pixelData[pixelOffset + 2]; // red
 
                     byte newColor = ((red + green + blue) / 3) <= threshold ? (byte)1 : (byte)0;
 
@@ -70,5 +64,4 @@ namespace LineArtVectorization.Models
             return pixels;
         }
     }
-
 }
