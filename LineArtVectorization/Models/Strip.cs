@@ -23,6 +23,5 @@ namespace LineArtVectorization.Models
         {
             return Length * Length > Weight;
         }
-
     }
 }

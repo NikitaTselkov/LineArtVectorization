@@ -60,21 +60,13 @@ namespace LineArtVectorization.ViewModels
                 byte[,] pixels = BitmapHelper.BitmapSourceToBlackAndWhitePixelsArray(image, 150);
                 Image = BitmapHelper.BinaryPixelsArrayToBitmapSource(pixels);
 
-                var rleByteEncoder = new RLE<byte>();
-
-                var MCC = rleByteEncoder.GetMCC(pixels);
-
                 var skelet = new Skeletonization();
 
-                var skeletonCurves = skelet.PartialSkeletonization(MCC);
+                var skeletonCurves = skelet.PartialSkeletonization(pixels);
 
                 foreach (var item in skeletonCurves)
                 {
-                    Lines.Add(new Line
-                    {
-                        Start = new Point(item.Points.First().X, item.Points.First().Y),
-                        End = new Point(item.Points.Last().X, item.Points.Last().Y)
-                    });
+                    Lines.Add(item.GetLine());
                 }
 
             }

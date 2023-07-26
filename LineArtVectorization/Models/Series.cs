@@ -16,12 +16,12 @@ namespace LineArtVectorization.Models
 
         public int End { get; init; }
 
-        public Series(Direction direction, int columnOrRowNumber, int firstPixelNumber, int lastPixelNumber)
+        public Series(Direction direction, int position, int begin, int end)
         {
             Direction = direction;
-            Position = columnOrRowNumber;
-            Begin = firstPixelNumber;
-            End = lastPixelNumber;
+            Position = position;
+            Begin = begin;
+            End = end;
         }
 
         public bool IsAdjacent(Series series)

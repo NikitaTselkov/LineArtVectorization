@@ -8,30 +8,38 @@ namespace LineArtVectorization.Models
 {
     public class Skeletonization
     {
-        public List<SkeletonCurve> PartialSkeletonization(IList<Series>[] mcc)
+        public List<SkeletonCurve> PartialSkeletonization(byte[,] pixels)
         {
+            var rleByteEncoder = new RLE<byte>();
             var skeletonCurves = new List<SkeletonCurve>();
 
             // вертикальное сканирование
-            for (int x = 0; x < mcc.Length; x++)
-            {
-                var verticalStrips = GetStrips(mcc[x]);
-                foreach (var strip in verticalStrips)
-                {
-                    // замена серий в полосе на скелетную кривую 
-                    var skeleton = BuildOptimizedCurve(strip);
-
-                    if(skeleton != null)
-                        skeletonCurves.Add(skeleton);
-                }
-            }
+            var MCC = rleByteEncoder.GetMCC(pixels, Direction.Vertical);
+            CreateSkeletonCurves(skeletonCurves, MCC, Direction.Vertical);
 
             // горизонтальное сканирование 
-            // аналогично, только сканирование по строкам
+            MCC = rleByteEncoder.GetMCC(pixels, Direction.Horizontal);
+            CreateSkeletonCurves(skeletonCurves, MCC, Direction.Horizontal);
 
             // обработка областей соединений
 
             return skeletonCurves;
+
+            void CreateSkeletonCurves(List<SkeletonCurve> skeletonCurves, IList<Series>[] MCC, Direction direction)
+            {
+                for (int x = 0; x < MCC.Length; x++)
+                {
+                    var verticalStrips = GetStrips(MCC[x]);
+                    foreach (var strip in verticalStrips)
+                    {
+                        // замена серий в полосе на скелетную кривую 
+                        var skeleton = BuildOptimizedCurve(strip, direction);
+
+                        if (skeleton != null)
+                            skeletonCurves.Add(skeleton);
+                    }
+                }
+            }
         }
 
         private List<Strip> GetStrips(IList<Series> seriesList)
@@ -49,7 +57,9 @@ namespace LineArtVectorization.Models
                     // начало новой полосы
                     currentStrip = new List<Series> { series };
                 }
-                else if (series.IsAdjacent(currentStrip.First()))
+                else if (series.IsAdjacent(currentStrip.Last())
+                    && series.Begin == currentStrip.Last().Begin
+                    && series.End == currentStrip.Last().End)
                 {
                     // серия принадлежит текущей полосе
                     currentStrip.Add(series);
@@ -71,30 +81,32 @@ namespace LineArtVectorization.Models
             return strips;
         }
 
-        private SkeletonCurve BuildOptimizedCurve(Strip strip)
+        private SkeletonCurve BuildOptimizedCurve(Strip strip, Direction direction)
         {
             var curve = new SkeletonCurve();
 
-            // Проходим с шагом по 2 серии для проверки Y
-            for (int i = 1; i < strip.Series.Count; i += 2)
+            Series s1 = strip.Series.FirstOrDefault();
+            Series s2 = strip.Series.LastOrDefault();
+
+            if (s1 != null && s2 != null)
             {
-                Series s1 = strip.Series[i];
-                Series s2 = strip.Series[i - 1];
-
-                // Проверка ограничения по Y
-                if (Math.Abs(s1.Position - s2.Position) > 1)
-                    break;
-
-                // Добавляем средние точки обеих серий  
-                curve.AddPoint((s1.Position + s2.Position) / 2, (s1.Begin + s2.Begin) / 2);
-                curve.AddPoint((s1.Position + s2.Position) / 2, (s1.End + s2.End) / 2);
+                if (!strip.ShouldBeClosed())
+                {
+                    if (direction == Direction.Vertical)
+                    {
+                        curve.AddPoint((s1.Position + s2.Position) / 2, s1.Begin);
+                        curve.AddPoint((s1.Position + s2.Position) / 2, s2.End);
+                    }
+                    else
+                    {
+                        curve.AddPoint(s1.Begin, (s1.Position + s2.Position) / 2);
+                        curve.AddPoint(s2.End, (s1.Position + s2.Position) / 2);
+                    }
+                }
             }
 
             if (curve.Points.Length < 1)
                 curve = null;
-
-            // Упрощаем кривую
-            curve?.Simplify();
 
             return curve;
         }

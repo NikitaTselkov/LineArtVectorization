@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using LineArtVectorization.Core;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 
@@ -20,18 +21,15 @@ namespace LineArtVectorization.Models
             _points.Add(new Point(x, y));
         }
 
-        // алгоритм упрощения кривой
-        public void Simplify()
+        public Line GetLine()
         {
-            if (_points.Count < 2) return;
-          
-            var x1 = _points.Where((p, i) => i % 2 == 0).Select(p => new { p.X, p.Y }).Average(p => p.X);
-            var y1 = _points.Where((p, i) => i % 2 == 0).Select(p => new { p.X, p.Y }).Average(p => p.Y);
-            
-            var x2 = _points.Where((p, i) => i % 2 != 0).Select(p => new { p.X, p.Y }).Average(p => p.X);
-            var y2 = _points.Where((p, i) => i % 2 != 0).Select(p => new { p.X, p.Y }).Average(p => p.Y);
+            if(_points != null) return new Line
+            {
+                Start = new Point(_points.First().X, _points.First().Y),
+                End = new Point(_points.Last().X, _points.Last().Y)
+            };
 
-            _points = new List<Point> { new Point(x1, y1), new Point(x2, y2) };
+            return null;
         }
     }
 }
