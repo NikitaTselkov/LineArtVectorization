@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace LineArtVectorization.Models
+namespace LineArtVectorization.Models.Utils
 {
     public interface IDataCompression<T>
     {

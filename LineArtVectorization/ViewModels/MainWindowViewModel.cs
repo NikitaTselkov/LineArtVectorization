@@ -1,13 +1,11 @@
 ﻿using LineArtVectorization.Core;
 using LineArtVectorization.Models;
+using LineArtVectorization.Models.Utils;
 using Microsoft.Win32;
 using Prism.Commands;
 using Prism.Mvvm;
 using System;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Windows;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace LineArtVectorization.ViewModels
@@ -66,7 +64,7 @@ namespace LineArtVectorization.ViewModels
 
                 foreach (var item in skeletonCurves)
                 {
-                    Lines.Add(item.GetLine());
+                    Lines.AddRange(item.GetLines());
                 }
 
             }

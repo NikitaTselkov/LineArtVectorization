@@ -6,7 +6,7 @@ using System.Windows.Media;
 using System;
 using System.Linq;
 
-namespace LineArtVectorization.Models
+namespace LineArtVectorization.Models.Utils
 {
     public static class BitmapHelper
     {
@@ -55,7 +55,7 @@ namespace LineArtVectorization.Models
                     byte green = pixelData[pixelOffset + 1]; // green  
                     byte red = pixelData[pixelOffset + 2]; // red
 
-                    byte newColor = ((red + green + blue) / 3) <= threshold ? (byte)1 : (byte)0;
+                    byte newColor = (red + green + blue) / 3 <= threshold ? (byte)1 : (byte)0;
 
                     pixels[y, x] = newColor;
                 }

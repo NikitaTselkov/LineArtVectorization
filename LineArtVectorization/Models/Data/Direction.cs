@@ -1,4 +1,4 @@
-﻿namespace LineArtVectorization.Models
+﻿namespace LineArtVectorization.Models.Data
 {
     public enum Direction
     {

@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using LineArtVectorization.Models.Data;
 
-namespace LineArtVectorization.Models
+namespace LineArtVectorization.Models.Utils
 {
     public class RLE<T> : IDataCompression<T>
     {
@@ -62,17 +64,14 @@ namespace LineArtVectorization.Models
             return result.ToArray();
         }
 
-        public IList<Series>[] GetMCC(T[,] image, Direction direction)
+        public Series[,] GetMCC(T[,] image, Direction direction)
         {
             int width = image.GetLength(0);
             int height = image.GetLength(1);
 
-            var columnsOrRows = new List<Series>[direction == Direction.Vertical ? width : height];
-
-            for (int i = 0; i < columnsOrRows.Length; i++)
-            {
-                columnsOrRows[i] = new List<Series>();
-            }
+            var columnsOrRows = new Series[
+                direction == Direction.Horizontal ? height : width,
+                direction == Direction.Horizontal ? width : height];
 
             byte black = 1;
 
@@ -111,7 +110,9 @@ namespace LineArtVectorization.Models
                     if (pixel != black && startPos != -1)
                     {
                         var series = new Series(direction, i, startPos, j - 1);
-                        columnsOrRows[startPos].Add(series);
+
+                        if (direction == Direction.Horizontal) columnsOrRows[i, startPos] = series;
+                        else columnsOrRows[startPos, i] = series;
                         startPos = -1;
                     }
                 }
@@ -119,7 +120,8 @@ namespace LineArtVectorization.Models
                 if (startPos != -1)
                 {
                     var series = new Series(direction, i, startPos, start - 1);
-                    columnsOrRows[startPos].Add(series);
+                    if (direction == Direction.Horizontal) columnsOrRows[i, startPos] = series;
+                    else columnsOrRows[startPos, i] = series;
                 }
             }
         }

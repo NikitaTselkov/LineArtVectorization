@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LineArtVectorization.Models
+namespace LineArtVectorization.Models.Data
 {
     public class Series
     {
@@ -26,6 +26,9 @@ namespace LineArtVectorization.Models
 
         public bool IsAdjacent(Series series)
         {
+            if(series == null)
+                return false;
+
             if (Direction != series.Direction)
                 return false;
 
