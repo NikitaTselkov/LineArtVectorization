@@ -1,14 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Media.Media3D;
-using System.Windows.Shapes;
-using System.Xml.Linq;
 using LineArtVectorization.Models.Data;
-using LineArtVectorization.Models.Data.Graph;
 
 namespace LineArtVectorization.Models.Utils
 {
@@ -44,11 +36,11 @@ namespace LineArtVectorization.Models.Utils
 
         private List<Strip> GetStrips(Series[,] seriesList)
         {
+            HashSet<Series> branches = new();
             List<Strip> strips = new();
-            Strip currentStrip = null;
 
             for (int i = 0; i < seriesList.GetLength(0); i++)
-            { 
+            {
                 for (int j = 0; j < seriesList.GetLength(1); j++)
                 {
                     Series series = seriesList[i, j];
@@ -57,51 +49,105 @@ namespace LineArtVectorization.Models.Utils
 
                     var strip = strips?.Where(w => w.GetLastSeries().IsAdjacent(series)).ToList();
 
-                    if (strip?.Count() == 1)
+                    List<Series> p = GetNearStrip(seriesList, i - 1, series);
+                    List<Series> c = GetNearStrip(seriesList, i + 1, series);
+
+                    if (branches.Contains(series))
                     {
-                        strip.Single().AddSeries(series);
+                        strips.Add(new Strip(series));
+                        branches.Remove(series);
                     }
-                    else
+                    else if (strip?.Count == 0)
                     {
-                        strips.Add(currentStrip = new Strip(series));
+                        strips.Add(new Strip(series));
+                    }
+                    else if (strip?.Count == 1)
+                    {
+                        if (p.Count > 1)
+                            continue;
+
+                        if (c.Count > 1)
+                            c.ForEach(f => branches.Add(f));
+
+                        strip.Single().AddSeries(series);
                     }
                 }
             }
 
-            // добавить последнюю незаконченную полосу
-            //if (currentStrip != null && !currentStrip.ShouldBeClosed())
-            //    strips.Add(currentStrip);
-            
+            for (int i = 0; i < strips.Count; i++)
+            {
+                if (!strips[i].ShouldBeClosed())
+                    strips[i] = null;
+            }
+
             return strips;
+
+            List<Series> GetNearStrip(Series[,] seriesList, int index, Series series)
+            {
+                var result = new List<Series>();
+                Series s;
+
+                if (index > 0 && index < seriesList.GetLength(0))
+                {
+                    for (int k = 0; k < seriesList.GetLength(1); k++)
+                    {
+                        s = seriesList[index, k];
+
+                        if (series.IsAdjacent(s))
+                            result.Add(s);
+                    }
+                }
+
+                return result;
+            }
         }
+
+        //private SkeletonCurve BuildOptimizedCurve(Strip strip)
+        //{
+        //    if (strip == null) return null;
+
+        //    var curve = new SkeletonCurve();
+        //    Series s = null;
+        //    Series s2 = null;
+
+        //    for (int i = 1; i < strip?.Length; i++)
+        //    {
+        //        s = strip.Series[i - 1];
+        //        s2 = strip.Series[i];
+
+        //        if (i == 1)
+        //            curve.AddPoint(s.Direction == Direction.Vertical ? new Point(s.Position, (s.Begin + s.End) / 2) : new Point((s.Begin + s.End) / 2, s.Position));
+
+        //        // Если направление изменилось
+        //        if (s.Direction != s2.Direction || s.IsAdjacent(s2) && s.Begin != s2.Begin && s.End != s2.End)
+        //            curve.AddPoint(s.Direction == Direction.Vertical ? new Point(s.Position, (s.Begin + s.End) / 2) : new Point((s.Begin + s.End) / 2, s.Position));
+        //    }
+
+        //    if (curve.Points.Length % 2 != 0)
+        //        curve.AddPoint(s.Direction == Direction.Vertical ? new Point(s.Position, (s.Begin + s.End) / 2) : new Point((s.Begin + s.End) / 2, s.Position));
+
+        //    return curve;
+        //}
 
         private SkeletonCurve BuildOptimizedCurve(Strip strip)
         {
             var curve = new SkeletonCurve();
 
-            Series s = strip.GetFirstSeries();
-
-            if (s != null)
+            for (int i = 0; i < strip?.Length; i++)
             {
-                for (int i = 0; i < strip.Length; i++)
+                var s = strip.Series[i];
+
+                if (s.Direction == Direction.Vertical)
                 {
-                    s = strip.Series[i];
                     curve.AddPoint(s.Position, (s.Begin + s.End) / 2);
                 }
-
-                //if (s1.Direction == Direction.Vertical)
-                //{
-                //    curve.AddPoint((s1.Position + s2.Position) / 2, s1.Begin);
-                //    curve.AddPoint((s1.Position + s2.Position) / 2, s2.End);
-                //}
-                //else
-                //{
-                //    curve.AddPoint(s1.Begin, (s1.Position + s2.Position) / 2);
-                //    curve.AddPoint(s2.End, (s1.Position + s2.Position) / 2);
-                //}
+                else
+                {
+                    curve.AddPoint((s.Begin + s.End) / 2, s.Position);
+                }
             }
 
-            if (curve.Points.Length < 2)
+            if (curve.Points.Length < 3)
                 curve = null;
 
             return curve;

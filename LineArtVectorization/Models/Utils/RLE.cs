@@ -70,8 +70,8 @@ namespace LineArtVectorization.Models.Utils
             int height = image.GetLength(1);
 
             var columnsOrRows = new Series[
-                direction == Direction.Horizontal ? height : width,
-                direction == Direction.Horizontal ? width : height];
+                direction == Direction.Vertical ? height : width,
+                direction == Direction.Vertical ? width : height];
 
             byte black = 1;
 
@@ -107,12 +107,11 @@ namespace LineArtVectorization.Models.Utils
                     if (pixel == black && startPos == -1)
                         startPos = j;
 
-                    if (pixel != black && startPos != -1)
+                    if (pixel != black && startPos != -1
                     {
                         var series = new Series(direction, i, startPos, j - 1);
 
-                        if (direction == Direction.Horizontal) columnsOrRows[i, startPos] = series;
-                        else columnsOrRows[startPos, i] = series;
+                        columnsOrRows[i, startPos] = series;
                         startPos = -1;
                     }
                 }
@@ -120,8 +119,7 @@ namespace LineArtVectorization.Models.Utils
                 if (startPos != -1)
                 {
                     var series = new Series(direction, i, startPos, start - 1);
-                    if (direction == Direction.Horizontal) columnsOrRows[i, startPos] = series;
-                    else columnsOrRows[startPos, i] = series;
+                    columnsOrRows[i, startPos] = series;
                 }
             }
         }
