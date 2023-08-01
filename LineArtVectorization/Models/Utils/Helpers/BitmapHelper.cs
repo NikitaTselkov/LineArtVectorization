@@ -6,7 +6,7 @@ using System.Windows.Media;
 using System;
 using System.Linq;
 
-namespace LineArtVectorization.Models.Utils
+namespace LineArtVectorization.Models.Utils.Helpers
 {
     public static class BitmapHelper
     {

@@ -1,11 +1,14 @@
 ﻿using LineArtVectorization.Core;
 using LineArtVectorization.Models;
+using LineArtVectorization.Models.Data;
 using LineArtVectorization.Models.Utils;
+using LineArtVectorization.Models.Utils.Helpers;
 using Microsoft.Win32;
 using Prism.Commands;
 using Prism.Mvvm;
 using System;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 
 namespace LineArtVectorization.ViewModels
@@ -60,13 +63,12 @@ namespace LineArtVectorization.ViewModels
 
                 var skelet = new Skeletonization();
 
-                var skeletonCurves = skelet.PartialSkeletonization(pixels);
+                var skeletonCurves = skelet.PartialSkeletonization(pixels).Result;
 
                 foreach (var item in skeletonCurves)
                 {
                     Lines.AddRange(item.GetLines());
                 }
-
             }
         }
     }

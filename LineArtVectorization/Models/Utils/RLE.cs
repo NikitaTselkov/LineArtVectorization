@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using LineArtVectorization.Models.Data;
+using LineArtVectorization.Models.Data.Enums;
 
 namespace LineArtVectorization.Models.Utils
 {
@@ -76,19 +77,11 @@ namespace LineArtVectorization.Models.Utils
             byte black = 1;
 
             if (direction == Direction.Vertical)
-            {
                 for (int y = 0; y < height; y++)
-                {
                     ProcessPixels(image, width, y, direction);
-                }
-            }
             else
-            {
                 for (int x = 0; x < width; x++)
-                {
                     ProcessPixels(image, height, x, direction);
-                }
-            }
 
             return columnsOrRows;
 
@@ -107,7 +100,7 @@ namespace LineArtVectorization.Models.Utils
                     if (pixel == black && startPos == -1)
                         startPos = j;
 
-                    if (pixel != black && startPos != -1
+                    if (pixel != black && startPos != -1)
                     {
                         var series = new Series(direction, i, startPos, j - 1);
 

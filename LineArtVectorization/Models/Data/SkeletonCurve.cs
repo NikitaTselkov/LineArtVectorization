@@ -27,6 +27,11 @@ namespace LineArtVectorization.Models.Data
             _points.Add(point);
         }
 
+        public void SetPoints(IList<Point> points)
+        {
+            _points = (List<Point>)points;
+        }
+
         public IList<Line> GetLines()
         {
             var result = new List<Line>();

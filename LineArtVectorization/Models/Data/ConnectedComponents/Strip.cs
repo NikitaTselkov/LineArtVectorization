@@ -4,12 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LineArtVectorization.Models.Data
+namespace LineArtVectorization.Models.Data.ConnectedComponents
 {
-    public class Strip
+    public class Strip : IConnectedComponent
     {
         private List<Series> _series;
         public IReadOnlyList<Series> Series => _series;
+
 
         public int Length => Series.Count;
 
@@ -36,7 +37,6 @@ namespace LineArtVectorization.Models.Data
         {
             _series.Add(series);
         }
-
         public Series GetFirstSeries()
         {
             return Series.FirstOrDefault();

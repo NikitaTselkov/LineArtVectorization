@@ -1,43 +1,70 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
+using LineArtVectorization.Core;
 using LineArtVectorization.Models.Data;
+using LineArtVectorization.Models.Data.ConnectedComponents;
+using LineArtVectorization.Models.Data.Enums;
+using LineArtVectorization.Models.Utils.Helpers;
 
 namespace LineArtVectorization.Models.Utils
 {
     public class Skeletonization
     {
-        public List<SkeletonCurve> PartialSkeletonization(byte[,] pixels)
+        public async Task<List<SkeletonCurve>> PartialSkeletonization(byte[,] pixels)
         {
             var rleByteEncoder = new RLE<byte>();
             var skeletonCurves = new List<SkeletonCurve>();
-            var strips = new List<Strip>();
+            var components = new List<IConnectedComponent>();
 
             // вертикальное сканирование
-            var MCC = rleByteEncoder.GetMCC(pixels, Direction.Vertical);
-            strips.AddRange(GetStrips(MCC));
+            var verticalTask = Task.Run(() =>
+            {
+                var verticalMCC = rleByteEncoder.GetMCC(pixels, Direction.Vertical);
+                return GetConnectedComponents(verticalMCC);
+            });
 
             // горизонтальное сканирование 
-            MCC = rleByteEncoder.GetMCC(pixels, Direction.Horizontal);
-            strips.AddRange(GetStrips(MCC));
-
-            // обработка областей соединений
-
-            foreach (var strip in strips)
+            var horizontalTask = Task.Run(() =>
             {
-                // замена серий в полосе на скелетную кривую 
-                var skeleton = BuildOptimizedCurve(strip);
+                var horizontalMCC = rleByteEncoder.GetMCC(pixels, Direction.Horizontal);
+                return GetConnectedComponents(horizontalMCC);
+            });
 
-                if (skeleton != null)
-                    skeletonCurves.Add(skeleton);
+            verticalTask.Await();
+            horizontalTask.Await();
+
+            components.AddRange(verticalTask.Result);
+            components.AddRange(horizontalTask.Result);
+
+            // обработка связных компонентов
+            foreach (var component in components)
+            {
+                if (component is Strip strip)
+                {
+                    SkeletonCurve skeleton = BuildCurveFromStrip(strip);
+
+                    if (skeleton != null)
+                        skeletonCurves.Add(skeleton);
+                }
+
+                else if (component is JunctionArea junction)
+                {
+                     var skeletons = BuildCurveFromJunctionArea(junction);
+
+                    if (skeletons != null)
+                        skeletonCurves.AddRange(skeletons.Where(f => f != null));
+                }
             }
 
             return skeletonCurves;
         }
 
-        private List<Strip> GetStrips(Series[,] seriesList)
+        private async Task<List<IConnectedComponent>> GetConnectedComponents(Series[,] seriesList)
         {
             HashSet<Series> branches = new();
-            List<Strip> strips = new();
+            List<IConnectedComponent> connectedComponents = new();
 
             for (int i = 0; i < seriesList.GetLength(0); i++)
             {
@@ -45,46 +72,64 @@ namespace LineArtVectorization.Models.Utils
                 {
                     Series series = seriesList[i, j];
 
-                    if (series == null) continue;
-
-                    var strip = strips?.Where(w => w.GetLastSeries().IsAdjacent(series)).ToList();
-
-                    List<Series> p = GetNearStrip(seriesList, i - 1, series);
-                    List<Series> c = GetNearStrip(seriesList, i + 1, series);
-
-                    if (branches.Contains(series))
+                    if (series != null)
                     {
-                        strips.Add(new Strip(series));
-                        branches.Remove(series);
-                    }
-                    else if (strip?.Count == 0)
-                    {
-                        strips.Add(new Strip(series));
-                    }
-                    else if (strip?.Count == 1)
-                    {
-                        if (p.Count > 1)
-                            continue;
+                        var components = connectedComponents?.Where(w => w != null && series.IsAdjacent(w.Series.Last())).ToList();
+
+                        List<Series> p = await Task.Run(() => GetNearStrip(seriesList, i - 1, series));
+                        List<Series> c = await Task.Run(() => GetNearStrip(seriesList, i + 1, series));
 
                         if (c.Count > 1)
+                        {
+                            connectedComponents.Add(new JunctionArea(series));
                             c.ForEach(f => branches.Add(f));
+                        }
 
-                        strip.Single().AddSeries(series);
+                        if (branches.Contains(series))
+                        {
+                            var strip = new Strip(series);
+                            connectedComponents.Add(strip);
+                            branches.Remove(series);
+
+                            var jArea = connectedComponents.LastOrDefault(l => l is JunctionArea) as JunctionArea;
+                            jArea.AddChildren(strip);
+                        }
+                        else if (components?.Count() == 0)
+                        {
+                            connectedComponents.Add(new Strip(series));
+                        }
+                        else if (components?.Count() == 1)
+                        {
+                            components.Single().AddSeries(series);
+                        }
+
+                        if (p.Count > 1)
+                        {
+                            var junctionArea = new JunctionArea(series);
+                            foreach (var item in p)
+                            {
+                                var parent = connectedComponents.Single(w => w.Series.LastOrDefault(l => l == item) != null) as Strip;
+                                junctionArea.AddParent(parent);
+                            }
+
+                            connectedComponents.Add(junctionArea);
+                        }
                     }
                 }
             }
 
-            for (int i = 0; i < strips.Count; i++)
+            for (int i = 0; i < connectedComponents.Count; i++)
             {
-                if (!strips[i].ShouldBeClosed())
-                    strips[i] = null;
+                if(connectedComponents[i] is Strip strip && !strip.ShouldBeClosed())
+                    connectedComponents[i] = null;
             }
 
-            return strips;
+            return connectedComponents;
 
             List<Series> GetNearStrip(Series[,] seriesList, int index, Series series)
             {
                 var result = new List<Series>();
+
                 Series s;
 
                 if (index > 0 && index < seriesList.GetLength(0))
@@ -102,55 +147,60 @@ namespace LineArtVectorization.Models.Utils
             }
         }
 
-        //private SkeletonCurve BuildOptimizedCurve(Strip strip)
-        //{
-        //    if (strip == null) return null;
+        private List<SkeletonCurve> BuildCurveFromJunctionArea(JunctionArea junction)
+        {
+            var parents = junction.Parents;
+            var childrens = junction.Childrens;
 
-        //    var curve = new SkeletonCurve();
-        //    Series s = null;
-        //    Series s2 = null;
+            foreach (var child in childrens)
+            {
+                var t = CalculateVectorDirection(child);
+            }
 
-        //    for (int i = 1; i < strip?.Length; i++)
-        //    {
-        //        s = strip.Series[i - 1];
-        //        s2 = strip.Series[i];
+            foreach (var parent in parents)
+            {
+                var t = CalculateVectorDirection(parent);
+            }
 
-        //        if (i == 1)
-        //            curve.AddPoint(s.Direction == Direction.Vertical ? new Point(s.Position, (s.Begin + s.End) / 2) : new Point((s.Begin + s.End) / 2, s.Position));
 
-        //        // Если направление изменилось
-        //        if (s.Direction != s2.Direction || s.IsAdjacent(s2) && s.Begin != s2.Begin && s.End != s2.End)
-        //            curve.AddPoint(s.Direction == Direction.Vertical ? new Point(s.Position, (s.Begin + s.End) / 2) : new Point((s.Begin + s.End) / 2, s.Position));
-        //    }
+            return null;
+        }
 
-        //    if (curve.Points.Length % 2 != 0)
-        //        curve.AddPoint(s.Direction == Direction.Vertical ? new Point(s.Position, (s.Begin + s.End) / 2) : new Point((s.Begin + s.End) / 2, s.Position));
+        private static Vector CalculateVectorDirection(Strip child)
+        {
+            var points = ConvertStripToPoints(child);
+            var vector = VectorHelper.GetVectorDirectionFromPoints(points);
+            var direction = VectorHelper.GetDirection(vector);
 
-        //    return curve;
-        //}
+            return vector;
+        }
 
-        private SkeletonCurve BuildOptimizedCurve(Strip strip)
+        private static SkeletonCurve BuildCurveFromStrip(Strip strip)
         {
             var curve = new SkeletonCurve();
 
-            for (int i = 0; i < strip?.Length; i++)
-            {
-                var s = strip.Series[i];
+            curve.SetPoints(ConvertStripToPoints(strip));
 
-                if (s.Direction == Direction.Vertical)
+            return curve.Points.Length > 2 ? curve : null;
+        }
+
+        private static List<Point> ConvertStripToPoints(Strip strip)
+        {
+            var points = new List<Point>();
+
+            foreach (var series in strip.Series)
+            {
+                if (series.Direction == Direction.Vertical)
                 {
-                    curve.AddPoint(s.Position, (s.Begin + s.End) / 2);
+                    points.Add(new Point(series.Position, (series.Begin + series.End) / 2));
                 }
                 else
                 {
-                    curve.AddPoint((s.Begin + s.End) / 2, s.Position);
+                    points.Add(new Point((series.Begin + series.End) / 2, series.Position));
                 }
             }
 
-            if (curve.Points.Length < 3)
-                curve = null;
-
-            return curve;
+            return points;
         }
     }
 }
